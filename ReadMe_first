@@ -1,0 +1,8 @@
+For some reason, I am unable to commit my .Rmd or .html files from my local to my Github Master branch.  I tried all possible means
+that I could think of - from Ubuntu bash, from RStudio Git option and also by uploading the files via the Github "Upload files" 
+option.  Hence as the last resort, I am providing the commit details in this ReadMe_first file.
+
+In R-Studio, some of my commits are shown as succesful, but I don't see those committed files in the Master branches of the
+repository.  The Subproject commit 80edf39c3bb508fee88e3394542f967dd3fd3270  (SHA--> d6f3075c and 13cfdd45) 
+
+Note:  I am still exploring why the commits are not happening, I suspect the changes are not getting staged to do the commit.  
