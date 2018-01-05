@@ -1,0 +1,145 @@
+---
+title: "ReproResearch"
+author: "Balaji K"
+date: "4 January 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+1. Set working directory
+2. Clone the github repository to local from R-Studio, using the shell command - git clone
+3. Unzip the input file and read (tried reading compressed file directly using readr, but it didn't help)
+4. Include dplyr package for data manipulations
+5. Load the data into a tbl_df and arrange columns, group by and summarize
+6. Now, get answer for Q1 - What is mean total number of steps taken per day?
+
+Loading and preprocessing the data
+
+```{r}
+mywd <- setwd("~/R/03. R Projects/Coursera projects/Reproducible Research/Course Project 1")
+mySrcData <- "/home/balman/R/03. R Projects/Coursera projects/Reproducible Research/Course Project 1/RepData_PeerAssessment1"
+setwd(mySrcData)
+myRawData <- read.csv("activity.csv")
+library(dplyr)
+my_tib1 <- tbl_df(myRawData)
+my_tib2 <- select(.data = my_tib1, 2:3, 1)
+by_date <- group_by(my_tib2, date)
+by_date_sum <- summarise(by_date, steps_tot = sum(steps,na.rm = TRUE))
+summary(by_date_sum)
+```
+# 2. Plot the histogram on Daily steps count
+```{R}
+hist(x = by_date_sum$steps_tot, main = "Daily Avg steps trend", xlab = "Daily steps Count",breaks = 61)
+#png("plot1.png", width=480, height=480)
+#with(by_date_sum, {
+#  hist(x = by_date_sum$steps_tot, main = "Daily Avg steps trend", xlab = "Daily steps Count",breaks = 61)
+#})
+#dev.off()
+```
+
+# 3. Code to calculate Mean and median number of steps taken each day
+```{R}
+mean_steps_per_day <- mean(by_date_sum$steps_tot)
+median_steps_per_day <- median(by_date_sum$steps_tot)
+ mean_steps_per_day
+ median_steps_per_day
+```
+
+
+# 4. Time series plot of the average number of steps taken
+
+```{R}
+by_date_avg <- summarise(by_date, steps_avg = mean(steps,na.rm = TRUE))
+    plot(aggregate(steps ~ interval, data = by_date, FUN = mean), type = "l")
+#png("plot2.png", width=480, height=480)
+#with(by_date, {
+#    plot(aggregate(steps ~ interval, data = by_date, FUN = mean), type = "l")
+#})
+#dev.off()
+```
+
+# The 5-minute interval that, on average, contains the maximum number of steps
+```{R}
+by_interval <- group_by(my_tib2, interval)
+by_interval_sum <- summarise(by_interval, max_steps = max(steps, na.rm = TRUE))
+arrange(by_interval_sum, desc(max_steps))
+max_steps <- max(by_interval_sum$max_steps)
+filter(by_interval_sum, max_steps == 806)
+ 
+```
+The interval that on a daily average had the max number of steps = 615
+
+Code to describe and show a strategy for imputing missing data
+Replaced NAs with mean value of steps
+```{R}
+
+by_date_cleaned <- by_date
+by_date_cleaned$steps[is.na(by_date_cleaned$steps)] <- mean(na.omit(by_date_cleaned$steps))
+```
+
+Histogram of the total number of steps taken each day after missing values are imputed
+Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+
+```{R}
+by_date_sum <- aggregate(steps ~ date, rm.na = TRUE, data = by_date, FUN = sum)
+by_date_sum2 <- aggregate(steps ~ date, rm.na = TRUE, data = by_date_cleaned, FUN = sum)
+
+with(by_date_sum, {
+par(mfrow = c(1, 2))
+plot(by_date_sum, type = "h", lwd = 5,lend = "square", main = "With NAs")
+abline(h = seq(0, 20000, 2500), lty = "dashed")
+plot(by_date_sum2, type = "h", lwd = 5, lend = "square", main = "NAs replaced")
+abline(h = seq(0, 20000, 2500), lty = "dashed")
+})
+
+#png("plot3.png", width=480, height=480)
+#with(by_date_sum, {
+#par(mfrow = c(1, 2))
+#plot(by_date_sum, type = "h", lwd = 5,lend = "square", main = "With NAs")
+#abline(h = seq(0, 20000, 2500), lty = "dashed")
+#plot(by_date_sum2, type = "h", lwd = 5, lend = "square", main = "NAs replaced")
+#abline(h = seq(0, 20000, 2500), lty = "dashed")
+#})
+#dev.off()
+
+mean_by_date <- aggregate(steps ~ date, data = by_date, FUN = mean)
+mean_by_date_cleaned <- aggregate(steps ~ date, data = by_date_cleaned, FUN = mean)
+median_by_date <- aggregate(steps ~ date, data = by_date, FUN = median)
+median_by_date_cleaned <- aggregate(steps ~ date, data = by_date_cleaned, FUN = median)
+```
+
+Are there differences in activity patterns between weekdays and weekends?
+
+```{R}
+by_date_cleaned$date <- as.POSIXct(by_date_cleaned$date)
+by_date_cleaned$daytype <-  ifelse(weekdays(by_date_cleaned$date) %in% c("Saturday", "Sunday"), "weekend", "weekday")
+by_date_cleaned$daytype <- as.factor(by_date_cleaned$daytype)
+```
+Plotting the timeseries plots
+
+```{R}
+q <- by_date_cleaned %>% group_by(daytype, interval) %>% summarize(daily_steps_tot = sum(steps))
+library(lattice)
+with(q, {
+      xyplot(daily_steps_tot ~ interval | daytype, 
+      type = "l",      
+      main = "Total Steps Interval-wise",
+      xlab = "Daily Intervals",
+      ylab = "Total Steps")
+})
+#png("plot4.png", width=480, height=480)
+#with(q, {
+#      xyplot(daily_steps_tot ~ interval | daytype, 
+#      type = "l",      
+#      main = "Total Steps Interval-wise",
+#      xlab = "Daily Intervals",
+#      ylab = "Total Steps")
+#})
+#dev.off()
+```
